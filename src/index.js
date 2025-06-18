@@ -10,6 +10,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+const productRoutes = require('./routes/products');
+
+app.use('/api/productos', productRoutes);
+
 app.get('/api/ping', (req, res) => {
   res.json({ message: 'pong' });
 });
