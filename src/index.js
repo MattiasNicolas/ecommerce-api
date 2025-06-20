@@ -19,6 +19,10 @@ const productRoutes = require('./routes/products');
 
 app.use('/api/productos', productRoutes);
 
+const orderRoutes = require('./routes/orders');
+
+app.use('/api/pedidos', orderRoutes);
+
 app.get('/api/ping', (req, res) => {
   res.json({ message: 'pong' });
 });
