@@ -1,10 +1,11 @@
 const User = require('../models/User');
-const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
+const { hashearPassword } = require('../utils/hashUtils'); 
 
 const registerUser = async (req, res) => {
   try {
-    const { nombre, email, contraseña } = req.body;
+    const { nombre, email, password } = req.body;
 
     // Verificar si ya existe ese email
     const userExistente = await User.findOne({ email });
@@ -13,28 +14,36 @@ const registerUser = async (req, res) => {
     }
 
     // Hashear la contraseña
-    const hashedPassword = await bcrypt.hash(contraseña, 10);
+    const hashedPassword = await hashearPassword(password);
 
     // Crear y guardar el usuario
     const nuevoUsuario = new User({
       nombre,
       email,
-      contraseña: hashedPassword
+      password: hashedPassword
     });
 
     await nuevoUsuario.save();
 
-    res.status(201).json({ message: 'Usuario registrado con éxito' });
+    // Devolver datos del usuario sin la contraseña
+    res.status(201).json({
+      message: 'Usuario registrado con éxito',
+      usuario: {
+        _id: nuevoUsuario._id,
+        nombre: nuevoUsuario.nombre,
+        email: nuevoUsuario.email,
+        rol: nuevoUsuario.rol
+      }
+    });
   } catch (error) {
     console.error('Error en registro:', error);
     res.status(500).json({ message: 'Error al registrar usuario' });
   }
 };
 
-
 const loginUser = async (req, res) => {
   try {
-    const { email, contraseña } = req.body;
+    const { email, password } = req.body;
 
     // Buscar usuario por email
     const usuario = await User.findOne({ email });
@@ -43,8 +52,8 @@ const loginUser = async (req, res) => {
     }
 
     // Comparar contraseñas
-    const contraseñaValida = await bcrypt.compare(contraseña, usuario.contraseña);
-    if (!contraseñaValida) {
+    const passwordValida = await bcrypt.compare(password, usuario.password);
+    if (!passwordValida) {
       return res.status(400).json({ message: 'Email o contraseña incorrectos' });
     }
 
@@ -55,9 +64,7 @@ const loginUser = async (req, res) => {
         rol: usuario.rol
       },
       process.env.JWT_SECRET,
-      {
-        expiresIn: '1h'
-      }
+      { expiresIn: '1h' }
     );
 
     res.json({

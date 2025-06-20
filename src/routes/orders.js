@@ -6,6 +6,7 @@ const { verifyToken, isAdmin } = require('../middlewares/authMiddleware');
 router.post('/', verifyToken, orderController.createOrder);
 router.get('/mios', verifyToken, orderController.getAllMyOrders);
 router.get('/', verifyToken, isAdmin, orderController.getAllOrders); // solo admin
+router.put('/:id/estado', verifyToken, isAdmin, orderController.updateOrderStatus); //solo admin
 
 module.exports = router;
 

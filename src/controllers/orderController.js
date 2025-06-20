@@ -1,4 +1,4 @@
-const Order = require('../models/Order');
+const Order = require('../models/Order'); 
 const Product = require('../models/Product');
 
 // Crear un nuevo pedido
@@ -71,8 +71,49 @@ const getAllOrders = async (req, res) => {
   }
 };
 
+// Cambiar estado de un pedido (solo admin)
+const updateOrderStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { estado } = req.body;
+
+    const estadosValidos = ['pendiente', 'enviado', 'cancelado'];
+    if (!estadosValidos.includes(estado)) {
+      return res.status(400).json({ message: 'Estado no válido.' });
+    }
+
+    const pedido = await Order.findById(id);
+
+    if (!pedido) {
+      return res.status(404).json({ message: 'Pedido no encontrado.' });
+    }
+
+    // Si el nuevo estado es "cancelado" y el anterior no lo era, devolver stock
+    if (estado === 'cancelado' && pedido.estado !== 'cancelado') {
+      for (const item of pedido.productos) {
+        await Product.findByIdAndUpdate(
+          item.producto,
+          { $inc: { stock: item.cantidad } }
+        );
+      }
+    }
+
+    pedido.estado = estado;
+    await pedido.save();
+
+    await pedido.populate('usuario');
+    await pedido.populate('productos.producto');
+
+    res.json({ message: 'Estado del pedido actualizado con éxito', pedido });
+  } catch (error) {
+    console.error('Error al actualizar estado del pedido:', error);
+    res.status(500).json({ message: 'Error al actualizar el pedido' });
+  }
+};
+
 module.exports = {
   createOrder,
   getAllMyOrders,
-  getAllOrders
+  getAllOrders,
+  updateOrderStatus
 };
